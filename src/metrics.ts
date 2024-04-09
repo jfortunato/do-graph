@@ -1,20 +1,29 @@
 // The API does not return the CPU usage directly, but instead returns a bunch of individual cpu data that can be added together.
-function getCpuMetrics(data, cpuCores, timeframe) {
-    let datapoints = [];
-    let labels = [];
+import { MetricDataResponse } from './api';
+import { ChartResults } from './graph';
 
-    const userValues = data.data.result.find((result) => result.metric.mode === 'user').values;
-    const systemValues = data.data.result.find((result) => result.metric.mode === 'system').values;
-    const stealValues = data.data.result.find((result) => result.metric.mode === 'steal').values;
-    const softirqValues = data.data.result.find((result) => result.metric.mode === 'softirq').values;
-    const niceValues = data.data.result.find((result) => result.metric.mode === 'nice').values;
-    const irqValues = data.data.result.find((result) => result.metric.mode === 'irq').values;
-    const iowaitValues = data.data.result.find((result) => result.metric.mode === 'iowait').values;
-    const idleValues = data.data.result.find((result) => result.metric.mode === 'idle').values;
+interface Dataset {
+    totalCpu: number;
+    idleCpu: number;
+    timestamp: number;
+}
+
+function getCpuMetrics(data: MetricDataResponse, cpuCores: number, timeframe: number): ChartResults {
+    let datapoints: number[] = [];
+    let labels: string[] = [];
+
+    const userValues = data.data.result.find((result) => result.metric.mode === 'user')!.values;
+    const systemValues = data.data.result.find((result) => result.metric.mode === 'system')!.values;
+    const stealValues = data.data.result.find((result) => result.metric.mode === 'steal')!.values;
+    const softirqValues = data.data.result.find((result) => result.metric.mode === 'softirq')!.values;
+    const niceValues = data.data.result.find((result) => result.metric.mode === 'nice')!.values;
+    const irqValues = data.data.result.find((result) => result.metric.mode === 'irq')!.values;
+    const iowaitValues = data.data.result.find((result) => result.metric.mode === 'iowait')!.values;
+    const idleValues = data.data.result.find((result) => result.metric.mode === 'idle')!.values;
 
     const totalDatapoints = data.data.result[0].values.length;
 
-    const dataset = [];
+    const dataset: Dataset[] = [];
 
     for (let i = 0; i < totalDatapoints; i++) {
         const user    =  parseFloat(userValues[i][1]);
@@ -27,8 +36,6 @@ function getCpuMetrics(data, cpuCores, timeframe) {
         const idle    =  parseFloat(idleValues[i][1]);
 
         const total = user + system + steal + softirq + nice + irq + iowait + idle;
-        const used = total - idle;
-        const cpuUsage = (used / total) * 100;
 
         dataset.push({
             totalCpu: total,
@@ -51,21 +58,21 @@ function getCpuMetrics(data, cpuCores, timeframe) {
 }
 
 // The load average is much simpler since we can use the values directly
-function getLoadMetrics(data, timeframe) {
-    let datapoints = [];
-    let labels = [];
+function getLoadMetrics(data: MetricDataResponse, timeframe: number): ChartResults {
+    let datapoints: number[] = [];
+    let labels: string[] = [];
 
     data.data.result[0].values.forEach((value) => {
         labels.push(timestampToLabel(value[0], timeframe));
-        datapoints.push(value[1]);
+        datapoints.push(parseFloat(value[1]));
     });
 
     return { labels, datapoints };
 }
 
-function timestampToLabel(timestamp, timeframe) {
+function timestampToLabel(timestamp: number, timeframe: number): string {
     // If timeframe is less than or equal to 24 hours, show time instead of date
-    const opts = timeframe <= 86400 ?
+    const opts: Intl.DateTimeFormatOptions = timeframe <= 86400 ?
         { hour: 'numeric', minute: 'numeric' } :
         { month: 'short', day: 'numeric' };
 
