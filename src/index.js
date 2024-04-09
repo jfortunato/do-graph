@@ -9,6 +9,35 @@ async function getData(token, metric, dropletId, timeframe) {
 
     const url = `https://api.digitalocean.com/v2/monitoring/metrics/droplet/${metric}?host_id=${dropletId}&start=${start}&end=${now}`;
 
+    return makeRequest(url, token);
+}
+
+// Get droplet information from DigitalOcean API, needed to get the number of CPU cores
+async function getDropletInfo(token, dropletId) {
+    const url = `https://api.digitalocean.com/v2/droplets/${dropletId}`;
+
+    return makeRequest(url, token);
+}
+
+// Get the number of CPU cores from the droplet information, and cache it in session storage
+// so we don't have to make the request every time.
+async function getNumberOfCpuCores(token, dropletId) {
+    const key = `cpu-cores-${dropletId}`;
+    const cachedCores = sessionStorage.getItem(key);
+
+    if (cachedCores) {
+        return parseInt(cachedCores);
+    }
+
+    const dropletInfo = await getDropletInfo(token, dropletId);
+    const cpuCores = dropletInfo.droplet.vcpus;
+
+    sessionStorage.setItem(key, cpuCores);
+
+    return cpuCores;
+}
+
+async function makeRequest(url, token) {
     const response = await fetch(url, {
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -78,10 +107,10 @@ document.getElementById("inputs-form").addEventListener("submit", async (event) 
     const timeframe = parseInt(document.getElementById("timeframe").value);
     const token = document.getElementById("token").value;
     const dropletId = document.getElementById("droplet").value;
-    const cpuCores = parseInt(document.getElementById("cpu-cores").value);
 
-    let data;
+    let data, cpuCores;
     try {
+        cpuCores = await getNumberOfCpuCores(token, dropletId);
         data = await getData(token, metric, dropletId, timeframe);
     } catch (error) {
         alert("Could not fetch data from DigitalOcean API");
