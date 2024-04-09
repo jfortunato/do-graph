@@ -1,4 +1,4 @@
-import { getData, getNumberOfCpuCores, Metric } from './api';
+import { getData, getDropletInfo, Metric } from './api';
 import { displayChart } from './graph';
 
 // Populate token & droplet ID if they exist in the url query string
@@ -23,9 +23,9 @@ export async function handleFormSubmit(event: SubmitEvent, $metric: HTMLSelectEl
   const token = $token.value;
   const dropletId = $droplet.value;
 
-  let data, cpuCores;
+  let data, dropletInfo;
   try {
-    cpuCores = await getNumberOfCpuCores(token, dropletId);
+    dropletInfo = await getDropletInfo(token, dropletId);
     data = await getData(token, metric, dropletId, timeframe);
   } catch (error) {
     alert("Could not fetch data from DigitalOcean API");
@@ -33,5 +33,5 @@ export async function handleFormSubmit(event: SubmitEvent, $metric: HTMLSelectEl
     return;
   }
 
-  displayChart($chartContainer, data, cpuCores, timeframe);
+  displayChart($chartContainer, data, dropletInfo, timeframe);
 }

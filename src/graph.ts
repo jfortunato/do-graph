@@ -1,6 +1,6 @@
 import { getCpuMetrics, getLoadMetrics } from './metrics';
 import Chart from 'chart.js/auto';
-import { MetricDataResponse } from './api';
+import { DropletInfoResponse, MetricDataResponse } from './api';
 
 export interface ChartResults {
   labels: string[];
@@ -8,8 +8,11 @@ export interface ChartResults {
 }
 
 // Display the chart using Chart.js
-export function displayChart(container: HTMLDivElement, data: MetricDataResponse, cpuCores: number, timeframe: number): void {
+export function displayChart(container: HTMLDivElement, data: MetricDataResponse, dropletInfo: DropletInfoResponse, timeframe: number): void {
   const isCpuMetric = data.data.result[0].metric.mode === 'idle';
+
+  const dropletName = dropletInfo.droplet.name;
+  const cpuCores = dropletInfo.droplet.vcpus;
 
   const results = isCpuMetric ?
     getCpuMetrics(data, cpuCores, timeframe) :
@@ -35,7 +38,7 @@ export function displayChart(container: HTMLDivElement, data: MetricDataResponse
     data: {
       labels: results.labels,
       datasets: [{
-        label: isCpuMetric ? 'CPU Usage' : '1 Minute Load Average',
+        label: `${dropletName} - ${isCpuMetric ? 'CPU Usage' : '1 Minute Load Average'}`,
         data: results.datapoints,
         borderWidth: 1
       }]

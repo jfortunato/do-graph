@@ -8,6 +8,7 @@ export type Metric = 'cpu' | 'load_1';
 // The response from the DigitalOcean API when fetching droplet information
 export interface DropletInfoResponse {
   droplet: {
+    name: string;
     vcpus: number;
   }
 }
@@ -27,28 +28,22 @@ export interface MetricDataResponse {
 type MetricValue = [number, string];
 
 // Get droplet information from DigitalOcean API, needed to get the number of CPU cores
-async function getDropletInfo(token: string, dropletId: string): Promise<DropletInfoResponse> {
-    const url = `${BASE_URL}/droplets/${dropletId}`;
+export async function getDropletInfo(token: string, dropletId: string): Promise<DropletInfoResponse> {
+  // Return cached info if we have it in session storage
+  const key = `droplet-info-${dropletId}`;
+  const cachedInfo = sessionStorage.getItem(key);
 
-    return makeRequest(url, token);
-}
-
-// Get the number of CPU cores from the droplet information, and cache it in session storage
-// so we don't have to make the request every time.
-export async function getNumberOfCpuCores(token: string, dropletId: string): Promise<number> {
-  const key = `cpu-cores-${dropletId}`;
-  const cachedCores = sessionStorage.getItem(key);
-
-  if (cachedCores) {
-    return parseInt(cachedCores);
+  if (cachedInfo) {
+    return JSON.parse(cachedInfo);
   }
 
-  const dropletInfo = await getDropletInfo(token, dropletId);
-  const cpuCores = dropletInfo.droplet.vcpus;
+  const url = `${BASE_URL}/droplets/${dropletId}`;
 
-  sessionStorage.setItem(key, cpuCores.toString());
+  const dropletInfo: DropletInfoResponse = await makeRequest(url, token);
 
-  return cpuCores;
+  sessionStorage.setItem(key, JSON.stringify(dropletInfo));
+
+  return dropletInfo;
 }
 
 // Get metrics data from DigitalOcean API
