@@ -15,7 +15,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "start": "parcel",
-    "build": "yarn typecheck && parcel build",
+    "build": "yarn typecheck && parcel build --public-url '.'",
     "clean": "rm -rf dist"
   }
 }
